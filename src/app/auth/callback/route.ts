@@ -12,7 +12,9 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
+    console.error('exchangeCodeForSession error:', error)
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  // codeがない場合はクライアント側でセッション処理させるため /auth/confirm へ
+  return NextResponse.redirect(`${origin}/auth/confirm?next=${next}`)
 }

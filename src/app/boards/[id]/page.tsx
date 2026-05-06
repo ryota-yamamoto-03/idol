@@ -229,7 +229,7 @@ function PostItem({ post, isReply = false }: { post: BoardPost & { localImages?:
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: boardId } = React.use(params)
-  const { user, loading, signInWithX } = useAuth()
+  const { user, loading, signInWithX, avatarUrl: userAvatarUrl, displayName: userDisplayName } = useAuth()
   const [newPost, setNewPost] = useState('')
   const [postImages, setPostImages] = useState<string[]>([])
   const [posts, setPosts] = useState(dummyBoardPosts)
@@ -244,8 +244,6 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const handleSubmit = () => {
     if (!user) return
     if (!newPost.trim() && postImages.length === 0) return
-    const displayName = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email?.split('@')[0] ?? 'ユーザー') as string
-    const avatarUrl = user.user_metadata?.avatar_url as string | undefined
     const newEntry: BoardPost & { localImages?: string[] } = {
       id: `local-${Date.now()}`,
       board_id: boardId,
@@ -256,7 +254,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       like_count: 0,
       parent_post_id: null,
       created_at: new Date().toISOString(),
-      user: { id: user.id, name: displayName, email: user.email ?? '', avatar_url: avatarUrl ?? null, bio: null, role: 'user', created_at: '' },
+      user: { id: user.id, name: userDisplayName, email: user.email ?? '', avatar_url: userAvatarUrl ?? null, bio: null, role: 'user', created_at: '' },
       replies: [],
     }
     setPosts((prev) => [newEntry as BoardPost, ...prev])
@@ -289,11 +287,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="bg-card border border-border rounded-xl p-3 space-y-2">
             <div className="flex items-center gap-2">
               <div className="relative w-7 h-7 rounded-full overflow-hidden border border-border shrink-0">
-                {user.user_metadata?.avatar_url ? (
-                  <Image src={user.user_metadata.avatar_url as string} alt="avatar" fill className="object-cover" />
+                {userAvatarUrl ? (
+                  <Image src={userAvatarUrl} alt="avatar" fill className="object-cover" />
                 ) : (
                   <div className="w-full h-full idol-gradient flex items-center justify-center text-white text-xs font-bold">
-                    {((user.user_metadata?.full_name ?? user.email) as string)?.[0]}
+                    {userDisplayName[0]}
                   </div>
                 )}
               </div>

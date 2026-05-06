@@ -10,6 +10,21 @@ interface AuthContextValue {
   loading: boolean
   signInWithX: () => Promise<void>
   signOut: () => Promise<void>
+  avatarUrl: string | null
+  displayName: string
+}
+
+export function getAvatarUrl(user: import('@supabase/supabase-js').User | null): string | null {
+  if (!user) return null
+  const m = user.user_metadata
+  // Twitter OAuth 1.0a / OAuth 2.0 どちらにも対応
+  return (m?.avatar_url ?? m?.profile_image_url ?? m?.picture ?? null) as string | null
+}
+
+export function getDisplayName(user: import('@supabase/supabase-js').User | null): string {
+  if (!user) return 'ユーザー'
+  const m = user.user_metadata
+  return (m?.full_name ?? m?.name ?? m?.user_name ?? user.email?.split('@')[0] ?? 'ユーザー') as string
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -18,6 +33,8 @@ const AuthContext = createContext<AuthContextValue>({
   loading: true,
   signInWithX: async () => {},
   signOut: async () => {},
+  avatarUrl: null,
+  displayName: 'ユーザー',
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -65,8 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
   }, [isSupabaseConfigured])
 
+  const avatarUrl = getAvatarUrl(user)
+  const displayName = getDisplayName(user)
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithX, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signInWithX, signOut, avatarUrl, displayName }}>
       {children}
     </AuthContext.Provider>
   )

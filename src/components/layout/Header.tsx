@@ -26,10 +26,7 @@ export default function Header() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const { user, loading, signInWithX, signOut } = useAuth()
-
-  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined
-  const displayName = (user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? user?.email?.split('@')[0] ?? 'ユーザー') as string
+  const { user, loading, signInWithX, signOut, avatarUrl, displayName } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">

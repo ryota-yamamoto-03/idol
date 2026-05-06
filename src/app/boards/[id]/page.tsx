@@ -5,6 +5,7 @@ import Link from 'next/link'
 import React, { useState, useRef, useCallback } from 'react'
 import { MessageSquare, Heart, Flag, ChevronLeft, Send, Reply, ImagePlus, X as XIcon, Lock, Pencil, Trash2, Check } from 'lucide-react'
 import { dummyBoardPosts } from '@/lib/dummy-data'
+import { getCustomBoards } from '@/lib/custom-boards'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useAuth } from '@/lib/auth-context'
@@ -306,7 +307,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [posts, setPosts] = useState(dummyBoardPosts)
   const isGroupBoard = boardId.startsWith('group-')
   const isMemberBoard = boardId.startsWith('member-')
-  const title = isGroupBoard
+
+  // カスタム掲示板のタイトルをlocalStorageから取得
+  const customBoard = typeof window !== 'undefined'
+    ? getCustomBoards().find((b) => b.id === boardId)
+    : null
+  const title = customBoard
+    ? customBoard.title
+    : isGroupBoard
     ? 'STARLET☆RIOT 掲示板'
     : isMemberBoard
     ? '桜井ひなた 掲示板'

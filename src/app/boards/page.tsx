@@ -1,43 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { MessageSquare, ChevronRight, Star, Users, Plus, X, Lock } from 'lucide-react'
+import { MessageSquare, ChevronRight, Star, Users, Plus, X, Lock, Trash2 } from 'lucide-react'
 import { dummyGroups, dummyMembers } from '@/lib/dummy-data'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { getCustomBoards, saveCustomBoard, deleteCustomBoard, type CustomBoard } from '@/lib/custom-boards'
 
-interface BoardItem {
-  id: string
-  title: string
-  subtitle: string
-  postCount: number
-  href: string
-  type: 'group' | 'member'
-  isCustom?: boolean
-}
-
-const initialGroupBoards: BoardItem[] = dummyGroups.map((group) => ({
+// ── ダミーボード ────────────────────────────────────────────
+const dummyGroupBoards = dummyGroups.map((group) => ({
   id: `group-${group.id}`,
   title: `${group.name} 掲示板`,
   subtitle: group.genre ?? '',
   postCount: Math.floor(Math.random() * 300) + 50,
   href: `/boards/group-${group.id}`,
-  type: 'group',
+  type: 'group' as const,
+  createdBy: null as string | null,
 }))
 
-const initialMemberBoards: BoardItem[] = dummyMembers.slice(0, 4).map((member) => ({
+const dummyMemberBoards = dummyMembers.slice(0, 4).map((member) => ({
   id: `member-${member.id}`,
   title: `${member.name} 掲示板`,
   subtitle: member.group?.name ?? '',
   postCount: Math.floor(Math.random() * 200) + 30,
   href: `/boards/member-${member.id}`,
-  type: 'member',
+  type: 'member' as const,
+  createdBy: null as string | null,
 }))
 
-// ── 新規掲示板作成モーダル ─────────────────────────────────────
+// ── 新規掲示板作成モーダル ───────────────────────────────────
 function NewBoardModal({
   type,
   onClose,
@@ -45,24 +39,25 @@ function NewBoardModal({
 }: {
   type: 'group' | 'member'
   onClose: () => void
-  onCreate: (board: BoardItem) => void
+  onCreate: (board: CustomBoard) => void
 }) {
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
+  const { user } = useAuth()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
-    const id = `${type}-custom-${Date.now()}`
-    onCreate({
-      id,
+    if (!title.trim() || !user) return
+    const board: CustomBoard = {
+      id: `${type}-custom-${Date.now()}`,
       title: title.trim(),
       subtitle: subtitle.trim(),
-      postCount: 0,
-      href: `/boards/${id}`,
       type,
-      isCustom: true,
-    })
+      createdBy: user.id,
+      createdAt: new Date().toISOString(),
+    }
+    saveCustomBoard(board)
+    onCreate(board)
     onClose()
   }
 
@@ -78,7 +73,6 @@ function NewBoardModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="space-y-1.5">
             <Label className="text-xs">掲示板名 <span className="text-destructive">*</span></Label>
@@ -117,19 +111,72 @@ function NewBoardModal({
   )
 }
 
-export default function BoardsPage() {
-  const { user } = useAuth()
-  const [groupBoards, setGroupBoards] = useState<BoardItem[]>(initialGroupBoards)
-  const [memberBoards, setMemberBoards] = useState<BoardItem[]>(initialMemberBoards)
-  const [modal, setModal] = useState<'group' | 'member' | null>(null)
+// ── ボードリスト行 ──────────────────────────────────────────
+function BoardRow({
+  id, title, subtitle, postCount, href, type, createdBy, currentUserId, onDelete,
+}: {
+  id: string; title: string; subtitle: string; postCount: number; href: string
+  type: 'group' | 'member'; createdBy: string | null; currentUserId?: string
+  onDelete?: (id: string) => void
+}) {
+  const isOwner = createdBy && currentUserId && createdBy === currentUserId
 
-  const handleCreate = (board: BoardItem) => {
-    if (board.type === 'group') {
-      setGroupBoards((prev) => [...prev, board])
-    } else {
-      setMemberBoards((prev) => [...prev, board])
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (confirm(`「${title}」を削除しますか？`)) {
+      deleteCustomBoard(id)
+      onDelete?.(id)
     }
   }
+
+  return (
+    <div className="flex items-center hover:bg-muted/50 transition-colors group">
+      <Link href={href} className="flex items-center gap-3 px-3 py-3 flex-1 min-w-0">
+        <MessageSquare className={`w-4 h-4 shrink-0 ${type === 'member' ? 'text-pink-400' : 'text-primary'}`} />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium line-clamp-1">{title}</p>
+          {subtitle && <p className="text-[10px] text-muted-foreground">{subtitle}</p>}
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-xs text-muted-foreground">{postCount}件</p>
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto mt-0.5" />
+        </div>
+      </Link>
+      {isOwner && (
+        <button
+          onClick={handleDelete}
+          className="px-3 py-3 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+          title="掲示板を削除"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ── メインページ ────────────────────────────────────────────
+export default function BoardsPage() {
+  const { user } = useAuth()
+  const [customBoards, setCustomBoards] = useState<CustomBoard[]>([])
+  const [modal, setModal] = useState<'group' | 'member' | null>(null)
+
+  // localStorageから読み込み
+  useEffect(() => {
+    setCustomBoards(getCustomBoards())
+  }, [])
+
+  const handleCreate = (board: CustomBoard) => {
+    setCustomBoards((prev) => [...prev, board])
+  }
+
+  const handleDelete = (id: string) => {
+    setCustomBoards((prev) => prev.filter((b) => b.id !== id))
+  }
+
+  const customGroupBoards = customBoards.filter((b) => b.type === 'group')
+  const customMemberBoards = customBoards.filter((b) => b.type === 'member')
 
   return (
     <div className="space-y-5">
@@ -161,24 +208,22 @@ export default function BoardsPage() {
           )}
         </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-          {groupBoards.map((board) => (
-            <Link
-              key={board.id}
-              href={board.href}
-              className="flex items-center gap-3 px-3 py-3 hover:bg-muted/50 transition-colors"
-            >
-              <MessageSquare className="w-4 h-4 text-primary shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-1">{board.title}</p>
-                {board.subtitle && (
-                  <p className="text-[10px] text-muted-foreground">{board.subtitle}</p>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-xs text-muted-foreground">{board.postCount}件</p>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto mt-0.5" />
-              </div>
-            </Link>
+          {dummyGroupBoards.map((b) => (
+            <BoardRow key={b.id} {...b} currentUserId={user?.id} />
+          ))}
+          {customGroupBoards.map((b) => (
+            <BoardRow
+              key={b.id}
+              id={b.id}
+              title={b.title}
+              subtitle={b.subtitle}
+              postCount={0}
+              href={`/boards/${b.id}`}
+              type={b.type}
+              createdBy={b.createdBy}
+              currentUserId={user?.id}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       </section>
@@ -201,34 +246,31 @@ export default function BoardsPage() {
           ) : (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="w-3 h-3" />
-              ログインで作成可能
+              ログインで掲示板作成可能
             </span>
           )}
         </div>
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-          {memberBoards.map((board) => (
-            <Link
-              key={board.id}
-              href={board.href}
-              className="flex items-center gap-3 px-3 py-3 hover:bg-muted/50 transition-colors"
-            >
-              <MessageSquare className="w-4 h-4 text-pink-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium line-clamp-1">{board.title}</p>
-                {board.subtitle && (
-                  <p className="text-[10px] text-muted-foreground">{board.subtitle}</p>
-                )}
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-xs text-muted-foreground">{board.postCount}件</p>
-                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground ml-auto mt-0.5" />
-              </div>
-            </Link>
+          {dummyMemberBoards.map((b) => (
+            <BoardRow key={b.id} {...b} currentUserId={user?.id} />
+          ))}
+          {customMemberBoards.map((b) => (
+            <BoardRow
+              key={b.id}
+              id={b.id}
+              title={b.title}
+              subtitle={b.subtitle}
+              postCount={0}
+              href={`/boards/${b.id}`}
+              type={b.type}
+              createdBy={b.createdBy}
+              currentUserId={user?.id}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       </section>
 
-      {/* モーダル */}
       {modal && (
         <NewBoardModal
           type={modal}

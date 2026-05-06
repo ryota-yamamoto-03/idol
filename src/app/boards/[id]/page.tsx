@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useState, useRef, useCallback } from 'react'
-import { MessageSquare, Heart, Flag, ChevronLeft, Send, Reply, ImagePlus, X as XIcon, Lock } from 'lucide-react'
+import { MessageSquare, Heart, Flag, ChevronLeft, Send, Reply, ImagePlus, X as XIcon, Lock, Pencil, Trash2, Check } from 'lucide-react'
 import { dummyBoardPosts } from '@/lib/dummy-data'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -114,16 +114,44 @@ function ImageUpload({ images, onAdd, onRemove, maxImages = 4 }: ImageUploadProp
 }
 
 // ── 投稿アイテム ─────────────────────────────────────────────
-function PostItem({ post, isReply = false }: { post: BoardPost & { localImages?: string[] }; isReply?: boolean }) {
+function PostItem({
+  post,
+  isReply = false,
+  currentUserId,
+  onDelete,
+  onEdit,
+}: {
+  post: BoardPost & { localImages?: string[] }
+  isReply?: boolean
+  currentUserId?: string
+  onDelete?: (id: string) => void
+  onEdit?: (id: string, newBody: string) => void
+}) {
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.like_count)
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyText, setReplyText] = useState('')
   const [replyImages, setReplyImages] = useState<string[]>([])
+  const [isEditing, setIsEditing] = useState(false)
+  const [editText, setEditText] = useState(post.body)
+
+  const isOwner = currentUserId && post.user_id === currentUserId
 
   const handleLike = () => {
     setLikeCount((c) => (liked ? c - 1 : c + 1))
     setLiked(!liked)
+  }
+
+  const handleEditSave = () => {
+    if (!editText.trim()) return
+    onEdit?.(post.id, editText)
+    setIsEditing(false)
+  }
+
+  const handleDelete = () => {
+    if (confirm('この投稿を削除しますか？')) {
+      onDelete?.(post.id)
+    }
   }
 
   return (
@@ -141,24 +169,65 @@ function PostItem({ post, isReply = false }: { post: BoardPost & { localImages?:
         </div>
 
         <div className="flex-1 min-w-0">
-          {/* User & Time */}
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-xs font-bold">{post.user?.name ?? '名無しさん'}</span>
-            <span className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</span>
+          {/* User & Time & 編集・削除ボタン */}
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold">{post.user?.name ?? '名無しさん'}</span>
+              <span className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</span>
+            </div>
+            {isOwner && !isEditing && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => { setIsEditing(true); setEditText(post.body) }}
+                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                  編集
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  削除
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Body */}
-          <p className="text-sm leading-relaxed text-foreground">{post.body}</p>
+          {/* Body or Edit Form */}
+          {isEditing ? (
+            <div className="space-y-1.5 mt-1">
+              <Textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                className="text-sm min-h-[70px] resize-none"
+                maxLength={500}
+                autoFocus
+              />
+              <div className="flex justify-end gap-1.5">
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setIsEditing(false)}>
+                  キャンセル
+                </Button>
+                <Button size="sm" className="h-7 text-xs idol-gradient text-white border-0" onClick={handleEditSave}>
+                  <Check className="w-3 h-3 mr-1" />
+                  保存
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed text-foreground">{post.body}</p>
+          )}
 
-          {/* Attached images (from dummy or local upload) */}
-          {post.image_url && (
+          {/* Attached images */}
+          {!isEditing && post.image_url && (
             <div className="mt-2">
               <div className="relative w-40 h-32 rounded-xl overflow-hidden border border-border">
                 <Image src={post.image_url} alt="添付画像" fill className="object-cover" />
               </div>
             </div>
           )}
-          {post.localImages && post.localImages.length > 0 && (
+          {!isEditing && post.localImages && post.localImages.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {post.localImages.map((src, i) => (
                 <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
@@ -169,25 +238,27 @@ function PostItem({ post, isReply = false }: { post: BoardPost & { localImages?:
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-3 mt-1.5">
-            <button
-              onClick={handleLike}
-              className={`flex items-center gap-1 text-xs transition-colors ${liked ? 'text-pink-500' : 'text-muted-foreground hover:text-pink-500'}`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-pink-500' : ''}`} />
-              {likeCount}
-            </button>
-            {!isReply && (
+          {!isEditing && (
+            <div className="flex items-center gap-3 mt-1.5">
               <button
-                onClick={() => setShowReplyForm(!showReplyForm)}
-                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                onClick={handleLike}
+                className={`flex items-center gap-1 text-xs transition-colors ${liked ? 'text-pink-500' : 'text-muted-foreground hover:text-pink-500'}`}
               >
-                <Reply className="w-3.5 h-3.5" />
-                返信
+                <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-pink-500' : ''}`} />
+                {likeCount}
               </button>
-            )}
-            <ReportButton postId={post.id} />
-          </div>
+              {!isReply && (
+                <button
+                  onClick={() => setShowReplyForm(!showReplyForm)}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Reply className="w-3.5 h-3.5" />
+                  返信
+                </button>
+              )}
+              <ReportButton postId={post.id} />
+            </div>
+          )}
 
           {/* Reply Form */}
           {showReplyForm && (
@@ -219,7 +290,7 @@ function PostItem({ post, isReply = false }: { post: BoardPost & { localImages?:
       {post.replies && post.replies.length > 0 && (
         <div className="divide-y divide-border/50">
           {post.replies.map((reply) => (
-            <PostItem key={reply.id} post={reply} isReply />
+            <PostItem key={reply.id} post={reply} isReply currentUserId={currentUserId} onDelete={onDelete} onEdit={onEdit} />
           ))}
         </div>
       )}
@@ -260,6 +331,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     setPosts((prev) => [newEntry as BoardPost, ...prev])
     setNewPost('')
     setPostImages([])
+  }
+
+  const handleDelete = (id: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  const handleEdit = (id: string, newBody: string) => {
+    setPosts((prev) => prev.map((p) => p.id === id ? { ...p, body: newBody } : p))
   }
 
   return (
@@ -361,7 +440,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
         <div className="divide-y divide-border px-3">
           {posts.map((post) => (
-            <PostItem key={post.id} post={post} />
+            <PostItem
+              key={post.id}
+              post={post}
+              currentUserId={user?.id}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
           ))}
         </div>
       </div>

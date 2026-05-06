@@ -1,11 +1,15 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight, TrendingUp, Star, Newspaper, MessageSquare, Users, Zap } from 'lucide-react'
 import { dummyGroups, dummyNews, dummyMembers } from '@/lib/dummy-data'
 import NewsCard from '@/components/news/NewsCard'
 import GroupCard from '@/components/groups/GroupCard'
+import { useAuth } from '@/lib/auth-context'
 
 export default function HomePage() {
+  const { user } = useAuth()
   const latestNews = dummyNews.slice(0, 5)
   const featuredGroups = dummyGroups.slice(0, 6)
   const recentMembers = dummyMembers.slice(0, 4)
@@ -34,9 +38,11 @@ export default function HomePage() {
             <Link href="/groups" className="bg-white text-purple-700 text-xs font-bold px-3 py-1.5 rounded-full hover:bg-purple-50 transition-colors">
               グループを見る
             </Link>
-            <Link href="/register" className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors border border-white/30">
-              無料登録
-            </Link>
+            {!user && (
+              <Link href="/register" className="bg-white/20 text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/30 transition-colors border border-white/30">
+                無料登録
+              </Link>
+            )}
           </div>
         </div>
       </div>

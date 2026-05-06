@@ -1,26 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import { Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useAuth } from '@/lib/auth-context'
+
+const XIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.74l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+)
 
 export default function RegisterPage() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [agreed, setAgreed] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!agreed) return
-    setLoading(true)
-    // TODO: Supabase auth
-    setTimeout(() => setLoading(false), 1000)
-  }
+  const { signInWithX } = useAuth()
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
@@ -33,74 +24,33 @@ export default function RegisterPage() {
           <p className="text-xs text-muted-foreground mt-1">アカウントを作成してコミュニティに参加しよう</p>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <form onSubmit={handleRegister} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="name" className="text-xs">ニックネーム</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="例: ひなた推し🌸"
-                required
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs">メールアドレス</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="example@email.com"
-                required
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs">パスワード（8文字以上）</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                minLength={8}
-                className="h-9 text-sm"
-              />
-            </div>
+        <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+          <p className="text-center text-sm text-muted-foreground">
+            X（Twitter）アカウントで登録
+          </p>
 
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 accent-primary"
-              />
-              <span className="text-xs text-muted-foreground">
-                <Link href="/terms" className="text-primary underline hover:no-underline">利用規約</Link>
-                および
-                <Link href="/terms#privacy" className="text-primary underline hover:no-underline">プライバシーポリシー</Link>
-                に同意します
-              </span>
-            </label>
+          <button
+            onClick={signInWithX}
+            className="w-full flex items-center justify-center gap-2.5 h-11 rounded-xl bg-black text-white font-bold text-sm hover:bg-black/80 transition-colors"
+          >
+            <XIcon />
+            X（Twitter）で登録・ログイン
+          </button>
 
-            <Button
-              type="submit"
-              className="w-full h-9 idol-gradient text-white border-0 font-bold"
-              disabled={loading || !agreed}
-            >
-              {loading ? '登録中...' : '無料で登録する'}
-            </Button>
-          </form>
+          <p className="text-center text-[10px] text-muted-foreground">
+            登録することで{' '}
+            <Link href="/terms" className="underline hover:no-underline">利用規約</Link>
+            {' '}および{' '}
+            <Link href="/terms#privacy" className="underline hover:no-underline">プライバシーポリシー</Link>
+            {' '}に同意したものとみなします
+          </p>
 
           <p className="text-center text-xs text-muted-foreground">
-            すでにアカウントをお持ちの方は{' '}
+            すでにアカウントをお持ちの方も{' '}
             <Link href="/login" className="text-primary font-medium hover:underline">
-              ログイン
+              こちら
             </Link>
+            {' '}からログインできます
           </p>
         </div>
       </div>

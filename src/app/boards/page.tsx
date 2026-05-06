@@ -156,7 +156,7 @@ export default function BoardsPage() {
           ) : (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Lock className="w-3 h-3" />
-              ログインで作成可能
+              ログインで掲示板作成可能
             </span>
           )}
         </div>

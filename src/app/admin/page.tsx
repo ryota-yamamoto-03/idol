@@ -51,7 +51,7 @@ export default function AdminPage() {
           <p className="text-xs text-muted-foreground mt-0.5">ログインしてください</p>
         </div>
         <button
-          onClick={signInWithX}
+          onClick={() => signInWithX('/admin')}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-black/80 transition-colors"
         >
           X（Twitter）でログイン

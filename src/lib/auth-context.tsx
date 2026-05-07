@@ -8,7 +8,7 @@ interface AuthContextValue {
   user: User | null
   session: Session | null
   loading: boolean
-  signInWithX: () => Promise<void>
+  signInWithX: (next?: string) => Promise<void>
   signOut: () => Promise<void>
   avatarUrl: string | null
   displayName: string
@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   session: null,
   loading: true,
-  signInWithX: async () => {},
+  signInWithX: async (_next?: string) => {},
   signOut: async () => {},
   avatarUrl: null,
   displayName: 'ユーザー',
@@ -64,15 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [isSupabaseConfigured])
 
-  const signInWithX = useCallback(async () => {
+  const signInWithX = useCallback(async (next?: string) => {
     if (!isSupabaseConfigured) {
       alert('Supabase の設定が必要です。\n.env.local に NEXT_PUBLIC_SUPABASE_URL と NEXT_PUBLIC_SUPABASE_ANON_KEY を設定してください。')
       return
     }
     const supabase = createClient()
+    const callbackUrl = next
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/auth/callback`
     await supabase.auth.signInWithOAuth({
       provider: 'twitter',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl },
     })
   }, [isSupabaseConfigured])
 

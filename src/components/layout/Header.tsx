@@ -22,6 +22,7 @@ const navLinks = [
   { href: '/members', label: 'メンバー' },
   { href: '/news', label: 'ニュース' },
   { href: '/boards', label: '掲示板' },
+  { href: '/schedule', label: 'スケジュール' },
 ]
 
 function isAdmin(user: import('@supabase/supabase-js').User | null): boolean {

@@ -7,6 +7,7 @@ import { dummyGroups, dummyNews, dummyMembers } from '@/lib/dummy-data'
 import NewsCard from '@/components/news/NewsCard'
 import GroupCard from '@/components/groups/GroupCard'
 import { useAuth } from '@/lib/auth-context'
+import AdBanner from '@/components/AdBanner'
 
 export default function HomePage() {
   const { user } = useAuth()
@@ -172,6 +173,9 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      {/* Ad Banner */}
+      <AdBanner />
 
       {/* Footer */}
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground justify-center pt-2 pb-4">

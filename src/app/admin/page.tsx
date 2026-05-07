@@ -4,11 +4,21 @@ import Link from 'next/link'
 import { useState } from 'react'
 import {
   Star, Users, Newspaper, MessageSquare, Flag, Shield,
-  Plus, Edit, Trash2, Eye, ChevronRight, Check, X as XIcon
+  Plus, Edit, Trash2, Eye, ChevronRight, Check, X as XIcon, Lock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { dummyGroups, dummyMembers, dummyNews, dummyBoardPosts } from '@/lib/dummy-data'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useAuth } from '@/lib/auth-context'
+
+const ADMIN_X_USERNAME = 'dorusuke_japan'
+
+function isAdmin(user: ReturnType<typeof useAuth>['user']): boolean {
+  if (!user) return false
+  const m = user.user_metadata
+  const username = (m?.user_name ?? m?.preferred_username ?? m?.screen_name ?? '') as string
+  return username.toLowerCase() === ADMIN_X_USERNAME.toLowerCase()
+}
 
 const mockReports = [
   { id: '1', target: '「〇〇ちゃんは整形してる」という投稿', reporter: 'ユーザーA', reason: '個人への誹謗中傷', status: 'pending', date: '2025-04-25' },
@@ -17,8 +27,54 @@ const mockReports = [
 ]
 
 export default function AdminPage() {
+  const { user, loading, signInWithX } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
   const [reports, setReports] = useState(mockReports)
+
+  // ── アクセス制限 ──────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">読み込み中...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+          <Lock className="w-6 h-6 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-sm font-bold">管理者専用ページです</p>
+          <p className="text-xs text-muted-foreground mt-0.5">ログインしてください</p>
+        </div>
+        <button
+          onClick={signInWithX}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-sm font-bold hover:bg-black/80 transition-colors"
+        >
+          X（Twitter）でログイン
+        </button>
+        <Link href="/" className="text-xs text-muted-foreground hover:underline">トップに戻る</Link>
+      </div>
+    )
+  }
+
+  if (!isAdmin(user)) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+          <Shield className="w-6 h-6 text-red-400" />
+        </div>
+        <div>
+          <p className="text-sm font-bold">アクセス権限がありません</p>
+          <p className="text-xs text-muted-foreground mt-0.5">管理者のみアクセスできます</p>
+        </div>
+        <Link href="/" className="text-xs text-primary hover:underline">トップに戻る</Link>
+      </div>
+    )
+  }
 
   const stats = [
     { label: 'グループ', value: dummyGroups.length, icon: Star, color: 'text-fuchsia-600' },

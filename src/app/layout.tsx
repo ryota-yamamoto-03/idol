@@ -8,6 +8,9 @@ import { AuthProvider } from '@/lib/auth-context'
 export const metadata: Metadata = {
   title: 'アイドルSNS - 地下アイドル情報コミュニティ',
   description: '地下アイドル・ライブアイドル・メンズアイドルの情報を集約したSNS型コミュニティ',
+  other: {
+    'google-adsense-account': 'ca-pub-9776060338423324',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -69,6 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       alert('Supabase の設定が必要です。\n.env.local に NEXT_PUBLIC_SUPABASE_URL と NEXT_PUBLIC_SUPABASE_ANON_KEY を設定してください。')
       return
     }
+    // OAuth後のリダイレクト先をlocalStorageに保存（クエリパラメータが失われるケースへの対策）
+    if (next) {
+      localStorage.setItem('auth_redirect_next', next)
+    }
     const supabase = createClient()
     const callbackUrl = next
       ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`

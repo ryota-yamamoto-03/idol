@@ -15,17 +15,23 @@ function AuthConfirmInner() {
   useEffect(() => {
     const supabase = createClient()
 
+    // localStorageに保存されたリダイレクト先を優先（クエリパラメータが失われた場合の対策）
+    const storedNext = localStorage.getItem('auth_redirect_next')
+    const redirectTo = (next && next !== '/') ? next : (storedNext ?? '/')
+
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        router.replace(next)
+        localStorage.removeItem('auth_redirect_next')
+        router.replace(redirectTo)
         return
       }
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session) {
           subscription.unsubscribe()
-          router.replace(next)
+          localStorage.removeItem('auth_redirect_next')
+          router.replace(redirectTo)
         } else if (event === 'SIGNED_OUT') {
           subscription.unsubscribe()
           router.replace('/login?error=auth_failed')

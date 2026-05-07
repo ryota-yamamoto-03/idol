@@ -16,5 +16,5 @@ export async function GET(request: Request) {
   }
 
   // codeがない場合はクライアント側でセッション処理させるため /auth/confirm へ
-  return NextResponse.redirect(`${origin}/auth/confirm?next=${next}`)
+  return NextResponse.redirect(`${origin}/auth/confirm?next=${encodeURIComponent(next)}`)
 }

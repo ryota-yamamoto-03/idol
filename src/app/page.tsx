@@ -177,7 +177,6 @@ export default function HomePage() {
       <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground justify-center pt-2 pb-4">
         <Link href="/terms" className="hover:text-primary">利用規約</Link>
         <Link href="/terms#privacy" className="hover:text-primary">プライバシーポリシー</Link>
-        <Link href="/admin" className="hover:text-primary">管理画面</Link>
       </div>
     </div>
   )

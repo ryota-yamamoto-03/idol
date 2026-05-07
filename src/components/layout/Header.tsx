@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Search, Bell, User, Menu, X, Star, LogOut, ChevronDown } from 'lucide-react'
+import { Search, Bell, User, Menu, X, Star, LogOut, ChevronDown, Shield } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/auth-context'
@@ -14,6 +14,8 @@ const XIcon = () => (
   </svg>
 )
 
+const ADMIN_X_USERNAME = 'dorusuke_japan'
+
 const navLinks = [
   { href: '/', label: 'トップ' },
   { href: '/groups', label: 'グループ' },
@@ -21,6 +23,13 @@ const navLinks = [
   { href: '/news', label: 'ニュース' },
   { href: '/boards', label: '掲示板' },
 ]
+
+function isAdmin(user: import('@supabase/supabase-js').User | null): boolean {
+  if (!user) return false
+  const m = user.user_metadata
+  const username = (m?.user_name ?? m?.preferred_username ?? m?.screen_name ?? '') as string
+  return username.toLowerCase() === ADMIN_X_USERNAME.toLowerCase()
+}
 
 export default function Header() {
   const pathname = usePathname()
@@ -57,6 +66,19 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {isAdmin(user) && (
+              <Link
+                href="/admin"
+                className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors ${
+                  pathname === '/admin'
+                    ? 'bg-fuchsia-600 text-white'
+                    : 'text-fuchsia-600 hover:bg-fuchsia-50'
+                }`}
+              >
+                <Shield className="w-3 h-3" />
+                管理画面
+              </Link>
+            )}
           </nav>
 
           <div className="flex-1" />
@@ -150,6 +172,20 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {isAdmin(user) && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-2 text-sm px-3 py-2 rounded-md font-medium ${
+                  pathname === '/admin'
+                    ? 'bg-fuchsia-600 text-white'
+                    : 'text-fuchsia-600 hover:bg-fuchsia-50'
+                }`}
+              >
+                <Shield className="w-4 h-4" />
+                管理画面
+              </Link>
+            )}
             <div className="border-t border-border mt-1 pt-2">
               {user ? (
                 <div className="space-y-1">

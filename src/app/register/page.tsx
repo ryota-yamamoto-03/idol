@@ -30,7 +30,7 @@ export default function RegisterPage() {
           </p>
 
           <button
-            onClick={signInWithX}
+            onClick={() => signInWithX()}
             className="w-full flex items-center justify-center gap-2.5 h-11 rounded-xl bg-black text-white font-bold text-sm hover:bg-black/80 transition-colors"
           >
             <XIcon />

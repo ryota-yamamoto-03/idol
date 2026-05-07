@@ -110,7 +110,7 @@ export default function Header() {
               ) : (
                 /* ── 未ログイン：X でログインボタン ── */
                 <button
-                  onClick={signInWithX}
+                  onClick={() => signInWithX()}
                   className="hidden md:flex items-center gap-1.5 text-xs font-bold px-3 h-7 rounded-full bg-black text-white hover:bg-black/80 transition-colors"
                 >
                   <XIcon />
